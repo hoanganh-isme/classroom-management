@@ -7,7 +7,9 @@ import {
     FieldValue,
     Timestamp,
 } from "firebase-admin/firestore";
-
+import {
+    createAuthToken,
+} from "../../services/token.service.js";
 import { db } from "../../config/firebase.js";
 import { sendAccessCode } from "../../services/sms.service.js";
 
@@ -212,15 +214,26 @@ export async function validatePhoneAccessCode(
     /*
      * OTP chỉ được dùng một lần.
      */
+    const authenticatedUser = {
+        id: userDocument.id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+    };
+
+    const token =
+        createAuthToken(authenticatedUser);
+
+    /*
+     * OTP chỉ được dùng một lần.
+     */
     await accessCodeReference.delete();
 
     return {
-        user: {
-            id: userDocument.id,
-            name: user.name,
-            phone: user.phone,
-            email: user.email,
-            role: user.role,
-        },
+        token,
+        expiresIn:
+            process.env.JWT_EXPIRES_IN || "1h",
+        user: authenticatedUser,
     };
 }
