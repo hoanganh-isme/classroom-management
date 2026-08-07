@@ -5,6 +5,8 @@ import { createServer } from "node:http";
 import { Server } from "socket.io";
 import { db } from "./config/firebase.js";
 import authRouter from "./modules/auth/auth.routes.js";
+import instructorRouter from
+    "./modules/instructor/instructor.routes.js";
 dotenv.config();
 
 const app = express();
@@ -22,6 +24,7 @@ app.use(
 
 app.use(express.json());
 app.use(authRouter);
+app.use(instructorRouter);
 app.get("/health", (request, response) => {
     response.status(200).json({
         success: true,

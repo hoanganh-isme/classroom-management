@@ -9,6 +9,17 @@ import DashboardPage from './pages/DashboardPage';
 
 function App() {
   const [currentScreen, setCurrentScreen] = useState('screen1');
+  const [authPhone, setAuthPhone] = useState('+84818528799');
+
+  React.useEffect(() => {
+    const handleUnauthorized = () => {
+      setCurrentScreen('screen1');
+    };
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => {
+      window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    };
+  }, []);
 
   return (
     <div className="app-main-wrapper">
@@ -23,7 +34,7 @@ function App() {
         <div className="auth-page-container">
           <SignInPhone
             onNext={(phone) => {
-              console.log('Phone entered:', phone);
+              setAuthPhone(phone);
               setCurrentScreen('screen2');
             }}
             onSwitchToEmail={() => setCurrentScreen('screen3')}
@@ -36,9 +47,9 @@ function App() {
       {currentScreen === 'screen2' && (
         <div className="auth-page-container">
           <PhoneVerification
+            phoneNumber={authPhone}
             onBack={() => setCurrentScreen('screen1')}
-            onSubmitCode={(code) => {
-              console.log('Phone OTP submitted:', code);
+            onSubmitCode={() => {
               setCurrentScreen('screen4');
             }}
           />

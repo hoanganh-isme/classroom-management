@@ -8,6 +8,16 @@ import {
     authorizeRoles,
 } from "../../middleware/authorize.js";
 
+import {
+    addStudent,
+    assignLesson,
+    deleteStudent,
+    editStudent,
+    getLessons,
+    getStudent,
+    getStudents,
+} from "./instructor.controller.js";
+
 const instructorRouter = Router();
 
 instructorRouter.use(
@@ -15,23 +25,38 @@ instructorRouter.use(
     authorizeRoles("instructor"),
 );
 
-instructorRouter.get(
-    "/students",
-    getStudents,
-);
-
 instructorRouter.post(
     "/addStudent",
     addStudent,
 );
 
+instructorRouter.post(
+    "/assignLesson",
+    assignLesson,
+);
+
+instructorRouter.get(
+    "/lessons",
+    getLessons,
+);
+
+instructorRouter.get(
+    "/students",
+    getStudents,
+);
+
+instructorRouter.get(
+    "/student/:phone",
+    getStudent,
+);
+
 instructorRouter.put(
-    "/students/:studentId",
-    updateStudent,
+    "/editStudent/:phone",
+    editStudent,
 );
 
 instructorRouter.delete(
-    "/students/:studentId",
+    "/student/:phone",
     deleteStudent,
 );
 

@@ -1,13 +1,32 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { createAccessCode } from '../../api/authApi';
+import { COUNTRY_CODES, formatFullPhone } from '../../utils/phoneUtils';
 
 export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
+  const [countryCode, setCountryCode] = useState('+84');
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onNext) {
-      onNext(phoneNumber);
+    setErrorMessage('');
+
+    const formatted = formatFullPhone(countryCode, phoneNumber);
+
+    setIsSubmitting(true);
+    try {
+      await createAccessCode(formatted);
+      if (onNext) {
+        onNext(formatted);
+      }
+    } catch (err) {
+      setErrorMessage(
+        err.response?.data?.message || 'Failed to send OTP code. Please try again.'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -26,16 +45,39 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
         <p className="auth-subtitle">Please enter your phone to sign in</p>
       </div>
 
+      {errorMessage && (
+        <div style={{ padding: '8px 12px', marginBottom: '12px', backgroundColor: '#fee2e2', color: '#dc2626', borderRadius: '6px', fontSize: '14px', textAlign: 'center' }}>
+          {errorMessage}
+        </div>
+      )}
+
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-group">
-          <input
-            type="tel"
-            className="form-input"
-            placeholder="Your Phone Number"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(e.target.value)}
-            required
-          />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <select
+              className="form-input"
+              style={{ width: '95px', flexShrink: 0, paddingRight: '2px' }}
+              value={countryCode}
+              onChange={(e) => setCountryCode(e.target.value)}
+              disabled={isSubmitting}
+            >
+              {COUNTRY_CODES.map((item) => (
+                <option key={item.code} value={item.code}>
+                  {item.label}
+                </option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              className="form-input"
+              style={{ flex: 1 }}
+              placeholder="0818528799"
+              value={phoneNumber}
+              onChange={(e) => setPhoneNumber(e.target.value)}
+              required
+              disabled={isSubmitting}
+            />
+          </div>
         </div>
 
         {onSwitchToEmail && (
@@ -47,8 +89,8 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
           </div>
         )}
 
-        <button type="submit" className="auth-btn">
-          Next
+        <button type="submit" className="auth-btn" disabled={isSubmitting}>
+          {isSubmitting ? 'Sending OTP...' : 'Next'}
         </button>
 
         <p className="auth-caption">passwordless authentication methods.</p>
