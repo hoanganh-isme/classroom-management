@@ -106,6 +106,7 @@ export async function createPhoneAccessCode(
         await sendAccessCode({
             phoneNumber,
             accessCode,
+            expiresInSeconds: ttlSeconds,
         });
     } catch (error) {
         /*
@@ -191,16 +192,13 @@ export async function validatePhoneAccessCode(
         "hex",
     );
 
-    const isDevFallback = process.env.NODE_ENV !== "production" && accessCode === "123456";
-
     const isValid =
-        isDevFallback ||
-        (storedHashBuffer.length ===
+        storedHashBuffer.length ===
         submittedHashBuffer.length &&
         timingSafeEqual(
             storedHashBuffer,
             submittedHashBuffer,
-        ));
+        );
 
     if (!isValid) {
         await accessCodeReference.update({
@@ -356,12 +354,9 @@ export async function validateEmailAccessCode(email, accessCode) {
     const storedHashBuffer = Buffer.from(storedAccessCode.codeHash, "hex");
     const submittedHashBuffer = Buffer.from(submittedCodeHash, "hex");
 
-    const isDevFallback = process.env.NODE_ENV !== "production" && accessCode === "123456";
-
     const isValid =
-        isDevFallback ||
-        (storedHashBuffer.length === submittedHashBuffer.length &&
-            timingSafeEqual(storedHashBuffer, submittedHashBuffer));
+        storedHashBuffer.length === submittedHashBuffer.length &&
+        timingSafeEqual(storedHashBuffer, submittedHashBuffer);
 
     if (!isValid) {
         await accessCodeReference.update({

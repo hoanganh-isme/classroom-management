@@ -5,6 +5,7 @@ import {
     initializeApp,
 } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { getAuth as getAdminAuth } from "firebase-admin/auth";
 
 const serviceAccountPath = new URL(
     "../../serviceAccountKey.json",
@@ -27,7 +28,6 @@ try {
     process.exit(1);
 }
 
-
 const firebaseApp =
     getApps().length > 0
         ? getApps()[0]
@@ -36,3 +36,4 @@ const firebaseApp =
         });
 
 export const db = getFirestore(firebaseApp);
+export const firebaseAdminAuth = getAdminAuth(firebaseApp);

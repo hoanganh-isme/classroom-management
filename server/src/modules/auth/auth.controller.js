@@ -4,6 +4,7 @@ import {
     validateEmailAccessCode,
     validatePhoneAccessCode,
 } from "./auth.service.js";
+import { authenticateFirebasePhone } from "./firebase-phone.service.js";
 
 const E164_PHONE_PATTERN = /^\+[1-9]\d{7,14}$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -109,6 +110,33 @@ export async function validateAccessCode(request, response) {
         return response.status(error.statusCode || 500).json({
             success: false,
             message: error.statusCode ? error.message : "Unable to validate access code.",
+        });
+    }
+}
+
+export async function firebasePhoneLogin(request, response) {
+    const { idToken } = request.body || {};
+
+    if (!idToken || typeof idToken !== "string" || !idToken.trim()) {
+        return response.status(400).json({
+            success: false,
+            message: "idToken is required.",
+        });
+    }
+
+    try {
+        const result = await authenticateFirebasePhone(idToken.trim());
+        return response.status(200).json({
+            success: true,
+            message: "Phone authentication successful.",
+            data: result,
+        });
+    } catch (error) {
+        console.error("Firebase phone login failed:", error.message);
+        const statusCode = error.statusCode || 401;
+        return response.status(statusCode).json({
+            success: false,
+            message: error.message || "Phone authentication failed.",
         });
     }
 }

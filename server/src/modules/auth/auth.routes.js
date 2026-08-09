@@ -2,6 +2,7 @@ import { Router } from "express";
 
 import {
     createAccessCode,
+    firebasePhoneLogin,
     validateAccessCode,
 } from "./auth.controller.js";
 
@@ -27,6 +28,11 @@ authRouter.post(
 authRouter.post(
     "/validateAccessCode",
     validateAccessCode,
+);
+
+authRouter.post(
+    "/firebasePhoneLogin",
+    firebasePhoneLogin,
 );
 
 /*

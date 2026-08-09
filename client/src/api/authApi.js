@@ -15,3 +15,8 @@ export const validateAccessCode = async (identifier, accessCode) => {
   const response = await httpClient.post("/validateAccessCode", payload);
   return response.data;
 };
+
+export const firebasePhoneLogin = async (idToken) => {
+  const response = await httpClient.post("/firebasePhoneLogin", { idToken });
+  return response.data;
+};

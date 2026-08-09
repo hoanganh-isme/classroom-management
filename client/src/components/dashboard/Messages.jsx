@@ -81,8 +81,10 @@ export default function Messages({ role = 'instructor', onUnreadCountUpdate }) {
           return [...prevMsgs, newMsg];
         });
 
-        // Automatically mark active conversation as read
-        socket.emit('chat:read', { conversationId: newMsg.conversationId });
+        // Automatically mark active conversation as read ONLY if message was sent by the other person
+        if (newMsg.senderRole !== role) {
+          socket.emit('chat:read', { conversationId: newMsg.conversationId });
+        }
       }
 
       // Update conversations list (last message & unread count)
@@ -111,11 +113,17 @@ export default function Messages({ role = 'instructor', onUnreadCountUpdate }) {
       // Update active messages read status if current conversation
       if (activeConvRef.current && activeConvRef.current.id === readEvent.conversationId) {
         setMessages((prevMsgs) =>
-          prevMsgs.map((msg) => ({
-            ...msg,
-            isRead: true,
-            readAt: msg.readAt || readEvent.readAt,
-          }))
+          prevMsgs.map((msg) => {
+            // Only mark messages sent by me as read when the reader is the recipient
+            if (msg.senderRole === role && readEvent.readerId && readEvent.readerId !== msg.senderId) {
+              return {
+                ...msg,
+                isRead: true,
+                readAt: msg.readAt || readEvent.readAt,
+              };
+            }
+            return msg;
+          })
         );
       }
     };
@@ -530,12 +538,12 @@ export default function Messages({ role = 'instructor', onUnreadCountUpdate }) {
                             {msg.isRead ? (
                               <>
                                 <CheckCheck size={14} />
-                                <span>Đã đọc</span>
+                                <span>Seen</span>
                               </>
                             ) : (
                               <>
                                 <Check size={14} />
-                                <span>Đã gửi</span>
+                                <span>Sent</span>
                               </>
                             )}
                           </span>

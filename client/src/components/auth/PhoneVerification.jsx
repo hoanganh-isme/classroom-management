@@ -1,14 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { validateAccessCode, createAccessCode } from '../../api/authApi';
-
+import { firebasePhoneLogin } from '../../api/authApi';
 import { saveAuthSession } from '../../utils/authUtils';
+import {
+  confirmPhoneVerificationCode,
+  sendPhoneVerificationCode,
+} from '../../services/firebasePhoneAuth.service';
 
 export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode }) {
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [infoMessage, setInfoMessage] = useState('');
+  const [cooldown, setCooldown] = useState(0);
+
+  useEffect(() => {
+    let timer = null;
+    if (cooldown > 0) {
+      timer = setInterval(() => {
+        setCooldown((prev) => prev - 1);
+      }, 1000);
+    }
+    return () => {
+      if (timer) clearInterval(timer);
+    };
+  }, [cooldown]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -22,8 +38,17 @@ export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode })
 
     setIsSubmitting(true);
     try {
-      const res = await validateAccessCode(phoneNumber, code.trim());
+      // 1. Confirm code with Firebase Web SDK
+      const firebaseUser = await confirmPhoneVerificationCode(code.trim());
+
+      // 2. Retrieve Firebase ID Token (proof of phone identity)
+      const firebaseIdToken = await firebaseUser.getIdToken();
+
+      // 3. Exchange Firebase ID Token with Backend for Application JWT
+      const res = await firebasePhoneLogin(firebaseIdToken);
+
       if (res.success && res.data?.token) {
+        // Save Application JWT to localStorage
         saveAuthSession(res.data);
         if (onSubmitCode) {
           onSubmitCode(res.data);
@@ -31,7 +56,7 @@ export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode })
       }
     } catch (err) {
       setErrorMessage(
-        err.response?.data?.message || 'Invalid access code. Please try again.'
+        err.message || err.response?.data?.message || 'Invalid verification code. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -40,15 +65,17 @@ export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode })
 
   const handleResend = async (e) => {
     e.preventDefault();
-    if (!phoneNumber) return;
+    if (!phoneNumber || cooldown > 0) return;
     setErrorMessage('');
     setInfoMessage('');
+
     try {
-      await createAccessCode(phoneNumber);
-      setInfoMessage('New OTP code has been generated & printed to server console!');
+      await sendPhoneVerificationCode(phoneNumber);
+      setInfoMessage('A new verification code has been sent to your phone!');
+      setCooldown(60);
     } catch (err) {
       setErrorMessage(
-        err.response?.data?.message || 'Failed to resend code.'
+        err.message || err.response?.data?.message || 'Failed to resend verification code.'
       );
     }
   };
@@ -96,13 +123,21 @@ export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode })
           />
         </div>
 
+        {/* Container element for reCAPTCHA if resend is triggered from this screen */}
+        <div id="recaptcha-container"></div>
+
         <button type="submit" className="auth-btn" disabled={isSubmitting}>
           {isSubmitting ? 'Verifying...' : 'Submit'}
         </button>
       </form>
 
       <div className="auth-footer-link">
-        Code not received? <a href="#resend" onClick={handleResend}>Send again</a>
+        Code not received?{' '}
+        {cooldown > 0 ? (
+          <span style={{ color: '#86909c' }}>Resend in {cooldown}s</span>
+        ) : (
+          <a href="#resend" onClick={handleResend}>Send again</a>
+        )}
       </div>
     </div>
   );

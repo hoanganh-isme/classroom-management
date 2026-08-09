@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { createAccessCode } from '../../api/authApi';
 import { COUNTRY_CODES, formatFullPhone } from '../../utils/phoneUtils';
+import { sendPhoneVerificationCode } from '../../services/firebasePhoneAuth.service';
 
 export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
   const [countryCode, setCountryCode] = useState('+84');
@@ -17,13 +17,13 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
 
     setIsSubmitting(true);
     try {
-      await createAccessCode(formatted);
+      await sendPhoneVerificationCode(formatted);
       if (onNext) {
         onNext(formatted);
       }
     } catch (err) {
       setErrorMessage(
-        err.response?.data?.message || 'Failed to send OTP code. Please try again.'
+        err.message || err.response?.data?.message || 'Failed to send SMS verification code. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
@@ -80,6 +80,9 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
           </div>
         </div>
 
+        {/* Firebase reCAPTCHA container */}
+        <div id="recaptcha-container"></div>
+
         {onSwitchToEmail && (
           <div
             className="switch-auth-method"
@@ -90,7 +93,7 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
         )}
 
         <button type="submit" className="auth-btn" disabled={isSubmitting}>
-          {isSubmitting ? 'Sending OTP...' : 'Next'}
+          {isSubmitting ? 'Sending SMS OTP...' : 'Next'}
         </button>
 
         <p className="auth-caption">passwordless authentication methods.</p>

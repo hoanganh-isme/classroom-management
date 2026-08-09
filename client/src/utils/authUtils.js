@@ -1,4 +1,5 @@
 import { disconnectSocket } from '../socket/socketClient';
+import { signOutFirebase } from '../services/firebasePhoneAuth.service';
 
 /**
  * Decodes a JWT token payload safely.
@@ -98,5 +99,10 @@ export function clearAuthSession() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   localStorage.removeItem('phone');
+  try {
+    signOutFirebase();
+  } catch (err) {
+    console.warn('Firebase signout warning:', err);
+  }
   disconnectSocket();
 }
