@@ -1,13 +1,33 @@
 import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
+import { createAccessCode } from '../../api/authApi';
 
 export default function SignInEmail({ onNext, onSwitchToPhone, onBack }) {
   const [email, setEmail] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (onNext) {
-      onNext(email);
+    setErrorMessage('');
+
+    if (!email.trim()) {
+      setErrorMessage('Please enter your email address.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await createAccessCode(email.trim());
+      if (onNext) {
+        onNext(email.trim());
+      }
+    } catch (err) {
+      setErrorMessage(
+        err.response?.data?.message || 'Failed to send verification email. Please check your email.'
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -26,6 +46,12 @@ export default function SignInEmail({ onNext, onSwitchToPhone, onBack }) {
         <p className="auth-subtitle">Please enter your email to sign in</p>
       </div>
 
+      {errorMessage && (
+        <div style={{ padding: '8px 12px', marginBottom: '12px', backgroundColor: '#fee2e2', color: '#dc2626', borderRadius: '6px', fontSize: '14px', textAlign: 'center' }}>
+          {errorMessage}
+        </div>
+      )}
+
       <form className="auth-form" onSubmit={handleSubmit}>
         <div className="form-group">
           <input
@@ -35,6 +61,7 @@ export default function SignInEmail({ onNext, onSwitchToPhone, onBack }) {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={isSubmitting}
           />
         </div>
 
@@ -47,8 +74,8 @@ export default function SignInEmail({ onNext, onSwitchToPhone, onBack }) {
           </div>
         )}
 
-        <button type="submit" className="auth-btn">
-          Next
+        <button type="submit" className="auth-btn" disabled={isSubmitting}>
+          {isSubmitting ? 'Sending OTP Code...' : 'Next'}
         </button>
 
         <p className="auth-caption">passwordless authentication methods.</p>

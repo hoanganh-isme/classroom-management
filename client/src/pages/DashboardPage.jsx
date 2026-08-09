@@ -6,6 +6,7 @@ import ManageLessons from '../components/dashboard/ManageLessons';
 import Messages from '../components/dashboard/Messages';
 import StudentProfileTab from '../components/dashboard/StudentProfileTab';
 import { getMyProfile } from '../api/studentApi';
+import { connectSocket } from '../socket/socketClient';
 
 export default function DashboardPage({
   forceOpenCreateModal = false,
@@ -18,6 +19,7 @@ export default function DashboardPage({
 
   const [activeTab, setActiveTab] = useState(defaultTab);
   const [userProfile, setUserProfile] = useState(null);
+  const [totalUnreadCount, setTotalUnreadCount] = useState(0);
 
   useEffect(() => {
     if (initialTab) {
@@ -44,11 +46,56 @@ export default function DashboardPage({
     loadUserProfile();
   }, [loadUserProfile]);
 
+  const handleUnreadCountUpdate = useCallback((count) => {
+    setTotalUnreadCount(count);
+  }, []);
+
+  // Sync unread messages count when not on message tab or on mount
+  useEffect(() => {
+    const socket = connectSocket();
+    if (!socket) return;
+
+    const refreshUnreadCount = () => {
+      socket.emit('chat:list', (res) => {
+        if (res && res.success && Array.isArray(res.data?.conversations)) {
+          const sum = res.data.conversations.reduce(
+            (acc, conv) => acc + (conv.unreadCount || 0),
+            0
+          );
+          setTotalUnreadCount(sum);
+        }
+      });
+    };
+
+    refreshUnreadCount();
+
+    const handleNewMessage = () => {
+      refreshUnreadCount();
+    };
+
+    const handleReadStatus = () => {
+      refreshUnreadCount();
+    };
+
+    socket.on('chat:message', handleNewMessage);
+    socket.on('chat:read_status', handleReadStatus);
+
+    return () => {
+      socket.off('chat:message', handleNewMessage);
+      socket.off('chat:read_status', handleReadStatus);
+    };
+  }, []);
+
   return (
     <div className="dashboard-layout">
       <Navbar onLogout={onLogout} user={userProfile} role={role} />
       <div className="dashboard-main">
-        <Sidebar activeTab={activeTab} onSelectTab={setActiveTab} role={role} />
+        <Sidebar
+          activeTab={activeTab}
+          onSelectTab={setActiveTab}
+          role={role}
+          unreadCount={totalUnreadCount}
+        />
         <main className="content-container">
           {activeTab === 'students' && isInstructor && (
             <ManageStudents forceOpenCreateModal={forceOpenCreateModal} onLogout={onLogout} />
@@ -63,7 +110,10 @@ export default function DashboardPage({
           )}
 
           {activeTab === 'message' && (
-            <Messages role={role} />
+            <Messages
+              role={role}
+              onUnreadCountUpdate={handleUnreadCountUpdate}
+            />
           )}
         </main>
       </div>

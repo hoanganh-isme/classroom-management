@@ -8,7 +8,7 @@ import EmailVerification from './components/auth/EmailVerification';
 import StudentSetupAccount from './components/auth/StudentSetupAccount';
 import StudentLogin from './components/auth/StudentLogin';
 import DashboardPage from './pages/DashboardPage';
-import { getUserRole } from './utils/authUtils';
+import { getUserRole, clearAuthSession } from './utils/authUtils';
 
 /**
  * Role-based Screen Guard rule.
@@ -60,6 +60,7 @@ function App() {
   });
 
   const [authPhone, setAuthPhone] = useState('+84818528799');
+  const [authEmail, setAuthEmail] = useState('');
   const [setupToken, setSetupToken] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     return urlParams.get('token') || '';
@@ -118,8 +119,13 @@ function App() {
 
   useEffect(() => {
     const handleUnauthorized = () => {
+      clearAuthSession();
       setUserRole(null);
-      setCurrentScreen('screen1');
+      if (window.location.pathname.includes('/student')) {
+        setCurrentScreen('screen10');
+      } else {
+        setCurrentScreen('screen1');
+      }
     };
 
     const handleForbidden = () => {
@@ -130,7 +136,11 @@ function App() {
       } else if (activeRole === 'instructor') {
         setCurrentScreen('screen4');
       } else {
-        setCurrentScreen('screen1');
+        if (window.location.pathname.includes('/student')) {
+          setCurrentScreen('screen10');
+        } else {
+          setCurrentScreen('screen1');
+        }
       }
     };
 
@@ -187,6 +197,7 @@ function App() {
         <div className="auth-page-container">
           <SignInEmail
             onNext={(email) => {
+              setAuthEmail(email);
               handleSelectScreen('screen6');
             }}
             onSwitchToPhone={() => handleSelectScreen('screen1')}
@@ -199,6 +210,7 @@ function App() {
       {currentScreen === 'screen6' && (
         <div className="auth-page-container">
           <EmailVerification
+            email={authEmail}
             onBack={() => handleSelectScreen('screen3')}
             onSubmitCode={(authData) => {
               handleAuthSuccess(authData);

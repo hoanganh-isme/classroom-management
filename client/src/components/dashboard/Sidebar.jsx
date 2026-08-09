@@ -1,7 +1,7 @@
 import React from 'react';
 import { BookOpen, MessageSquare, Users, User } from 'lucide-react';
 
-export default function Sidebar({ activeTab = 'students', onSelectTab, role = 'instructor' }) {
+export default function Sidebar({ activeTab = 'students', onSelectTab, role = 'instructor', unreadCount = 0 }) {
   const isInstructor = role === 'instructor';
 
   const items = isInstructor
@@ -27,9 +27,15 @@ export default function Sidebar({ activeTab = 'students', onSelectTab, role = 'i
               key={item.id}
               className={`sidebar-item ${isActive ? 'active' : ''}`}
               onClick={() => onSelectTab && onSelectTab(item.id)}
+              style={{ position: 'relative' }}
             >
               <Icon size={18} />
-              <span>{item.label}</span>
+              <span style={{ flex: 1 }}>{item.label}</span>
+              {item.id === 'message' && unreadCount > 0 && (
+                <span className="sidebar-unread-badge">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
             </div>
           );
         })}

@@ -77,55 +77,163 @@ export async function sendStudentWelcomeEmail({ name, email, phone }) {
     console.log(`[SMTP EMAIL] Sent welcome email to ${email}. MessageId: ${info.messageId}`);
     return { provider: "smtp", messageId: info.messageId };
 }
-
 export async function sendStudentSetupEmail({
     name,
     email,
     setupUrl,
     expiresInHours,
 }) {
-    const emailMode = process.env.EMAIL_MODE || "console";
-    const appName = "Classroom Management System";
-    const subject = `Set up your ${appName} account`;
+    const emailMode =
+        process.env.EMAIL_MODE ||
+        "console";
+
+    const appName =
+        "Classroom Management System";
+
+    const subject =
+        `Set up your ${appName} account`;
 
     const htmlContent = `
-        <div style="font-family: Arial, sans-serif; padding: 24px; color: #333;">
-            <h2>Welcome, ${name}!</h2>
-            <p>Your instructor has created a student account for you.</p>
-            <p>Click the button below to create your username and password.</p>
+        <div style="
+            font-family: Arial, sans-serif;
+            padding: 24px;
+            color: #333;
+        ">
+            <h2>
+                Welcome, ${name}!
+            </h2>
+
+            <p>
+                Your instructor has created
+                a student account for you.
+            </p>
+
+            <p>
+                Click the button below to
+                create your username and password.
+            </p>
 
             <p style="margin: 24px 0;">
-                <a href="${setupUrl}" style="display: inline-block; padding: 12px 20px; background: #1677ff; color: white; text-decoration: none; border-radius: 6px;">
+                <a
+                    href="${setupUrl}"
+                    style="
+                        display: inline-block;
+                        padding: 12px 20px;
+                        background: #1677ff;
+                        color: white;
+                        text-decoration: none;
+                        border-radius: 6px;
+                    "
+                >
                     Set up account
                 </a>
             </p>
 
-            <p>This link expires in ${expiresInHours} hours.</p>
-            <p>If you did not expect this email, you can safely ignore it.</p>
+            <p>
+                This link expires in
+                ${expiresInHours} hours.
+            </p>
+
+            <p>
+                If you did not expect this email,
+                you can safely ignore it.
+            </p>
         </div>
     `;
 
+    /*
+     * Development:
+     * không gửi email thật,
+     * in verification URL ra terminal.
+     */
     if (emailMode === "console") {
-        console.log("========================================");
-        console.log(`[DEV EMAIL] Student setup email: ${email}`);
-        console.log(`Setup URL: ${setupUrl}`);
-        console.log("========================================");
+        console.log(
+            "========================================",
+        );
+
+        console.log(
+            `[DEV EMAIL] Student setup email: ${email}`,
+        );
+
+        console.log(
+            `Setup URL: ${setupUrl}`,
+        );
+
+        console.log(
+            "========================================",
+        );
+
+        return {
+            provider: "console",
+            success: true,
+        };
+    }
+
+    const transporter =
+        getTransporter();
+
+    if (!transporter) {
+        throw new Error(
+            "SMTP is not configured.",
+        );
+    }
+
+    const info =
+        await transporter.sendMail({
+            from:
+                `"${appName}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject,
+            html: htmlContent,
+        });
+
+    return {
+        provider: "smtp",
+        messageId:
+            info.messageId,
+    };
+}
+
+export async function sendAccessCodeEmail({ email, accessCode }) {
+    const emailMode = process.env.EMAIL_MODE || "console";
+    const appName = "Classroom Management System";
+    const subject = `Your ${appName} Access Code: ${accessCode}`;
+
+    const htmlContent = `
+        <div style="font-family: Arial, sans-serif; padding: 24px; color: #333;">
+            <h2>${appName} Verification Code</h2>
+            <p>Your 6-digit access code to sign in is:</p>
+            <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; color: #1677ff; margin: 20px 0;">
+                ${accessCode}
+            </div>
+            <p>This access code expires in 5 minutes.</p>
+        </div>
+    `;
+
+    console.log("========================================");
+    console.log(`[DEV EMAIL OTP] Access code for ${email}: ${accessCode}`);
+    console.log("========================================");
+
+    if (emailMode === "console") {
         return { provider: "console", success: true };
     }
 
     const transporter = getTransporter();
     if (!transporter) {
-        console.log(`[DEV EMAIL - Fallback] SMTP credentials missing. Logged setup link to console for ${email}: ${setupUrl}`);
         return { provider: "console", success: true };
     }
 
-    const info = await transporter.sendMail({
-        from: `"${appName}" <${process.env.SMTP_USER}>`,
-        to: email,
-        subject,
-        html: htmlContent,
-    });
-
-    console.log(`[SMTP EMAIL] Sent setup email to ${email}. MessageId: ${info.messageId}`);
-    return { provider: "smtp", messageId: info.messageId };
+    try {
+        const info = await transporter.sendMail({
+            from: `"${appName}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject,
+            html: htmlContent,
+        });
+        console.log(`[SMTP EMAIL OTP] Sent access code to ${email}. MessageId: ${info.messageId}`);
+        return { provider: "smtp", messageId: info.messageId };
+    } catch (err) {
+        console.error("Failed to send email OTP via SMTP:", err);
+        return { provider: "console", success: true };
+    }
 }

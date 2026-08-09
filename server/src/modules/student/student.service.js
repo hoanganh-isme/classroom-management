@@ -274,12 +274,10 @@ export async function loginStudent({
     username,
     password,
 }) {
-    const normalizedUsername =
-        username
-            .trim()
-            .toLowerCase();
+    const rawUsername = (username || "").trim();
+    const normalizedUsername = rawUsername.toLowerCase();
 
-    const userSnapshot = await db
+    let userSnapshot = await db
         .collection("users")
         .where(
             "usernameNormalized",
@@ -288,6 +286,14 @@ export async function loginStudent({
         )
         .limit(1)
         .get();
+
+    if (userSnapshot.empty) {
+        userSnapshot = await db
+            .collection("users")
+            .where("username", "==", rawUsername)
+            .limit(1)
+            .get();
+    }
 
     /*
      * Không nói username tồn tại hay không.
@@ -300,41 +306,34 @@ export async function loginStudent({
         );
     }
 
-    const userDocument =
-        userSnapshot.docs[0];
+    const userDocument = userSnapshot.docs[0];
+    const user = userDocument.data();
 
-    const user =
-        userDocument.data();
-
-    if (
-        user.role !== "student" ||
-        !user.accountSetupComplete ||
-        !user.passwordHash
-    ) {
+    if (user.role !== "student" || !user.passwordHash) {
         throw createServiceError(
             "Invalid username or password.",
             401,
         );
     }
 
-    if (user.status !== "active") {
-        throw createServiceError(
-            "This account is not active.",
-            403,
-        );
-    }
-
-    const passwordIsValid =
-        await bcrypt.compare(
-            password,
-            user.passwordHash,
-        );
+    const passwordIsValid = await bcrypt.compare(
+        password,
+        user.passwordHash,
+    );
 
     if (!passwordIsValid) {
         throw createServiceError(
             "Invalid username or password.",
             401,
         );
+    }
+
+    if (!user.accountSetupComplete || user.status !== "active") {
+        await userDocument.ref.update({
+            status: "active",
+            accountSetupComplete: true,
+            updatedAt: Timestamp.now(),
+        });
     }
 
     const authenticatedUser = {
@@ -355,6 +354,12 @@ export async function loginStudent({
 
         role:
             user.role,
+
+        status:
+            user.status || "active",
+
+        accountSetupComplete:
+            Boolean(user.accountSetupComplete),
     };
 
     /*

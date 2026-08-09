@@ -1,3 +1,5 @@
+import { disconnectSocket } from '../socket/socketClient';
+
 /**
  * Decodes a JWT token payload safely.
  * @param {string} token 
@@ -96,4 +98,5 @@ export function clearAuthSession() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
   localStorage.removeItem('phone');
+  disconnectSocket();
 }

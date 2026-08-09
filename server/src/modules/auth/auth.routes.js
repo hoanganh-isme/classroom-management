@@ -29,11 +29,12 @@ authRouter.post(
     validateAccessCode,
 );
 
-
-authRouter.use(authenticate);
-
+/*
+ * Authenticated routes:
+ */
 authRouter.get(
     "/auth-check",
+    authenticate,
     (request, response) => {
         return response.status(200).json({
             success: true,
@@ -45,6 +46,7 @@ authRouter.get(
 
 authRouter.get(
     "/instructor-check",
+    authenticate,
     authorizeRoles("instructor"),
     (request, response) => {
         return response.status(200).json({

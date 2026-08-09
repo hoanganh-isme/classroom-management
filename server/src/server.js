@@ -7,7 +7,7 @@ import { db } from "./config/firebase.js";
 import authRouter from "./modules/auth/auth.routes.js";
 import instructorRouter from "./modules/instructor/instructor.routes.js";
 import studentRouter from "./modules/student/student.routes.js";
-import { initializeSocket } from "./socket/index.js";
+import { initializeSocket } from "./socket/socket.js";
 
 dotenv.config();
 
