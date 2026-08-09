@@ -1,14 +1,8 @@
-import {
-    verifyAuthToken,
-} from "../services/token.service.js";
+import { verifyAuthToken } from "../services/token.service.js";
+import { getAuthenticatedUser } from "../services/auth-user.service.js";
 
-export function authenticate(
-    request,
-    response,
-    next,
-) {
-    const authorizationHeader =
-        request.headers.authorization;
+export async function authenticate(request, response, next) {
+    const authorizationHeader = request.headers.authorization;
 
     if (
         typeof authorizationHeader !== "string" ||
@@ -16,8 +10,7 @@ export function authenticate(
     ) {
         return response.status(401).json({
             success: false,
-            message:
-                "Authorization Bearer token is required.",
+            message: "Authorization Bearer token is required.",
         });
     }
 
@@ -33,28 +26,34 @@ export function authenticate(
     }
 
     try {
-        const decodedToken =
-            verifyAuthToken(token);
+        const decodedToken = verifyAuthToken(token);
+        const user = await getAuthenticatedUser(decodedToken);
 
-        request.user = {
-            id: decodedToken.sub,
-            role: decodedToken.role,
-        };
-
+        request.user = user;
         return next();
     } catch (error) {
         if (error.name === "TokenExpiredError") {
             return response.status(401).json({
                 success: false,
-                message:
-                    "Authentication token has expired.",
+                message: "Authentication token has expired.",
             });
         }
 
-        return response.status(401).json({
+        if (
+            error.name === "JsonWebTokenError" ||
+            error.name === "NotBeforeError"
+        ) {
+            return response.status(401).json({
+                success: false,
+                message: "Authentication token is invalid.",
+            });
+        }
+
+        const statusCode = error.statusCode || 401;
+
+        return response.status(statusCode).json({
             success: false,
-            message:
-                "Authentication token is invalid.",
+            message: error.message || "Authentication failed.",
         });
     }
 }

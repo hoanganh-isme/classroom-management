@@ -3,6 +3,7 @@ import {
 } from "zod";
 
 import {
+    changeStudentPassword as changeStudentPasswordService,
     completeStudentLesson as completeStudentLessonService,
     getMyLessons as getMyLessonsService,
     getMyProfile as getMyProfileService,
@@ -241,6 +242,41 @@ export async function markLessonDone(request, response) {
         return response.status(error.statusCode || 500).json({
             success: false,
             message: error.message || "Failed to mark lesson done.",
+        });
+    }
+}
+
+export async function changePassword(request, response) {
+    const { currentPassword, newPassword } = request.body || {};
+    if (!currentPassword || !newPassword) {
+        return response.status(400).json({
+            success: false,
+            message: "Current password and new password are required.",
+        });
+    }
+
+    if (newPassword.length < 8) {
+        return response.status(400).json({
+            success: false,
+            message: "New password must be at least 8 characters.",
+        });
+    }
+
+    try {
+        await changeStudentPasswordService({
+            studentId: request.user.id,
+            currentPassword,
+            newPassword,
+        });
+
+        return response.status(200).json({
+            success: true,
+            message: "Password was changed successfully.",
+        });
+    } catch (error) {
+        return response.status(error.statusCode || 500).json({
+            success: false,
+            message: error.message || "Failed to change password.",
         });
     }
 }

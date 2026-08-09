@@ -1,12 +1,7 @@
 import { Router } from "express";
 
-import {
-    authenticate,
-} from "../../middleware/authenticate.js";
-
-import {
-    authorizeRoles,
-} from "../../middleware/authorize.js";
+import { authenticate } from "../../middleware/authenticate.js";
+import { authorizeRoles } from "../../middleware/authorize.js";
 
 import {
     addStudent,
@@ -20,44 +15,14 @@ import {
 
 const instructorRouter = Router();
 
-instructorRouter.use(
-    authenticate,
-    authorizeRoles("instructor"),
-);
+const requireInstructor = [authenticate, authorizeRoles("instructor")];
 
-instructorRouter.post(
-    "/addStudent",
-    addStudent,
-);
-
-instructorRouter.post(
-    "/assignLesson",
-    assignLesson,
-);
-
-instructorRouter.get(
-    "/lessons",
-    getLessons,
-);
-
-instructorRouter.get(
-    "/students",
-    getStudents,
-);
-
-instructorRouter.get(
-    "/student/:phone",
-    getStudent,
-);
-
-instructorRouter.put(
-    "/editStudent/:phone",
-    editStudent,
-);
-
-instructorRouter.delete(
-    "/student/:phone",
-    deleteStudent,
-);
+instructorRouter.post("/addStudent", requireInstructor, addStudent);
+instructorRouter.post("/assignLesson", requireInstructor, assignLesson);
+instructorRouter.get("/lessons", requireInstructor, getLessons);
+instructorRouter.get("/students", requireInstructor, getStudents);
+instructorRouter.get("/student/:phone", requireInstructor, getStudent);
+instructorRouter.put("/editStudent/:phone", requireInstructor, editStudent);
+instructorRouter.delete("/student/:phone", requireInstructor, deleteStudent);
 
 export default instructorRouter;

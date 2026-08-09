@@ -8,10 +8,37 @@ import EmailVerification from './components/auth/EmailVerification';
 import StudentSetupAccount from './components/auth/StudentSetupAccount';
 import StudentLogin from './components/auth/StudentLogin';
 import DashboardPage from './pages/DashboardPage';
-import StudentDashboardPage from './pages/StudentDashboardPage';
 import { getUserRole } from './utils/authUtils';
 
+/**
+ * Role-based Screen Guard rule.
+ * @param {string} screenId 
+ * @param {string|null} role 
+ * @returns {boolean}
+ */
+export function canAccessScreen(screenId, role) {
+  const publicScreens = ['screen1', 'screen2', 'screen3', 'screen6', 'screen9', 'screen10'];
+  const instructorScreens = ['screen4', 'screen5'];
+  const studentScreens = ['screen11'];
+
+  if (publicScreens.includes(screenId)) {
+    return true;
+  }
+
+  if (instructorScreens.includes(screenId)) {
+    return role === 'instructor';
+  }
+
+  if (studentScreens.includes(screenId)) {
+    return role === 'student';
+  }
+
+  return false;
+}
+
 function App() {
+  const [userRole, setUserRole] = useState(() => getUserRole());
+
   const [currentScreen, setCurrentScreen] = useState(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -25,6 +52,10 @@ function App() {
     if (role === 'student') return 'screen11';
     if (role === 'instructor') return 'screen4';
 
+    if (path.includes('/student')) {
+      return 'screen10';
+    }
+
     return 'screen1';
   });
 
@@ -34,6 +65,8 @@ function App() {
     return urlParams.get('token') || '';
   });
 
+  const showDemoNavbar = import.meta.env.VITE_SHOW_DEMO_NAV === 'true';
+
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const token = urlParams.get('token');
@@ -42,14 +75,40 @@ function App() {
     if (token || path.includes('/student/setup-account')) {
       setSetupToken(token || '');
       setCurrentScreen('screen9');
+    } else if (path.includes('/student') && !getUserRole()) {
+      setCurrentScreen('screen10');
     }
   }, []);
 
+  const handleSelectScreen = (screenId) => {
+    const activeRole = getUserRole();
+    setUserRole(activeRole);
+
+    if (canAccessScreen(screenId, activeRole)) {
+      setCurrentScreen(screenId);
+    } else {
+      if (activeRole === 'instructor') {
+        setCurrentScreen('screen4');
+      } else if (activeRole === 'student') {
+        setCurrentScreen('screen11');
+      } else {
+        setCurrentScreen('screen1');
+      }
+    }
+  };
+
   const handleAuthSuccess = (authData) => {
     const role = getUserRole(authData);
+    setUserRole(role);
 
     if (role === 'student') {
-      setCurrentScreen('screen11');
+      const user = authData?.user;
+      // If student has not set up username/password yet, direct to setup screen
+      if (user && user.accountSetupComplete === false) {
+        setCurrentScreen('screen9');
+      } else {
+        setCurrentScreen('screen11');
+      }
     } else if (role === 'instructor') {
       setCurrentScreen('screen4');
     } else {
@@ -59,21 +118,42 @@ function App() {
 
   useEffect(() => {
     const handleUnauthorized = () => {
+      setUserRole(null);
       setCurrentScreen('screen1');
     };
+
+    const handleForbidden = () => {
+      const activeRole = getUserRole();
+      setUserRole(activeRole);
+      if (activeRole === 'student') {
+        setCurrentScreen('screen11');
+      } else if (activeRole === 'instructor') {
+        setCurrentScreen('screen4');
+      } else {
+        setCurrentScreen('screen1');
+      }
+    };
+
     window.addEventListener('auth:unauthorized', handleUnauthorized);
+    window.addEventListener('auth:forbidden', handleForbidden);
+
     return () => {
       window.removeEventListener('auth:unauthorized', handleUnauthorized);
+      window.removeEventListener('auth:forbidden', handleForbidden);
     };
   }, []);
 
   return (
     <div className="app-main-wrapper">
-      {/* Figma Screen Selector Header Bar */}
-      <DemoNavbar
-        currentScreen={currentScreen}
-        onSelectScreen={setCurrentScreen}
-      />
+      {/* Conditionally render DemoNavbar based on VITE_SHOW_DEMO_NAV */}
+      {showDemoNavbar && (
+        <DemoNavbar
+          currentScreen={currentScreen}
+          onSelectScreen={handleSelectScreen}
+          canAccessScreen={canAccessScreen}
+          userRole={userRole}
+        />
+      )}
 
       {/* Screen 1: Sign In (Phone) */}
       {currentScreen === 'screen1' && (
@@ -81,10 +161,10 @@ function App() {
           <SignInPhone
             onNext={(phone) => {
               setAuthPhone(phone);
-              setCurrentScreen('screen2');
+              handleSelectScreen('screen2');
             }}
-            onSwitchToEmail={() => setCurrentScreen('screen3')}
-            onBack={() => setCurrentScreen('screen3')}
+            onSwitchToEmail={() => handleSelectScreen('screen3')}
+            onBack={() => handleSelectScreen('screen10')}
           />
         </div>
       )}
@@ -94,7 +174,7 @@ function App() {
         <div className="auth-page-container">
           <PhoneVerification
             phoneNumber={authPhone}
-            onBack={() => setCurrentScreen('screen1')}
+            onBack={() => handleSelectScreen('screen1')}
             onSubmitCode={(authData) => {
               handleAuthSuccess(authData);
             }}
@@ -107,10 +187,10 @@ function App() {
         <div className="auth-page-container">
           <SignInEmail
             onNext={(email) => {
-              setCurrentScreen('screen6');
+              handleSelectScreen('screen6');
             }}
-            onSwitchToPhone={() => setCurrentScreen('screen1')}
-            onBack={() => setCurrentScreen('screen1')}
+            onSwitchToPhone={() => handleSelectScreen('screen1')}
+            onBack={() => handleSelectScreen('screen10')}
           />
         </div>
       )}
@@ -119,7 +199,7 @@ function App() {
       {currentScreen === 'screen6' && (
         <div className="auth-page-container">
           <EmailVerification
-            onBack={() => setCurrentScreen('screen3')}
+            onBack={() => handleSelectScreen('screen3')}
             onSubmitCode={(authData) => {
               handleAuthSuccess(authData);
             }}
@@ -128,13 +208,29 @@ function App() {
       )}
 
       {/* Screen 4: Manage Students (Instructor View) */}
-      {currentScreen === 'screen4' && (
-        <DashboardPage forceOpenCreateModal={false} initialTab="students" role="instructor" />
+      {currentScreen === 'screen4' && canAccessScreen('screen4', userRole) && (
+        <DashboardPage
+          forceOpenCreateModal={false}
+          initialTab="students"
+          role="instructor"
+          onLogout={() => {
+            setUserRole(null);
+            handleSelectScreen('screen1');
+          }}
+        />
       )}
 
       {/* Screen 5: Create Student Modal over Manage Students */}
-      {currentScreen === 'screen5' && (
-        <DashboardPage forceOpenCreateModal={true} initialTab="students" role="instructor" />
+      {currentScreen === 'screen5' && canAccessScreen('screen5', userRole) && (
+        <DashboardPage
+          forceOpenCreateModal={true}
+          initialTab="students"
+          role="instructor"
+          onLogout={() => {
+            setUserRole(null);
+            handleSelectScreen('screen1');
+          }}
+        />
       )}
 
       {/* Screen 9: Student Account Setup (from Email Link) */}
@@ -142,7 +238,7 @@ function App() {
         <div className="auth-page-container">
           <StudentSetupAccount
             initialToken={setupToken}
-            onNavigateToLogin={() => setCurrentScreen('screen10')}
+            onNavigateToLogin={() => handleSelectScreen('screen10')}
           />
         </div>
       )}
@@ -151,15 +247,22 @@ function App() {
       {currentScreen === 'screen10' && (
         <div className="auth-page-container">
           <StudentLogin
-            onLoginSuccess={(user) => handleAuthSuccess({ user })}
-            onSwitchToInstructorLogin={() => setCurrentScreen('screen1')}
+            onLoginSuccess={(authData) => handleAuthSuccess(authData)}
+            onSwitchToInstructorLogin={() => handleSelectScreen('screen1')}
           />
         </div>
       )}
 
       {/* Screen 11: Student Dashboard (Tasks Done & Profile Edit) */}
-      {currentScreen === 'screen11' && (
-        <StudentDashboardPage onLogout={() => setCurrentScreen('screen10')} />
+      {currentScreen === 'screen11' && canAccessScreen('screen11', userRole) && (
+        <DashboardPage
+          role="student"
+          initialTab="lessons"
+          onLogout={() => {
+            setUserRole(null);
+            handleSelectScreen('screen10');
+          }}
+        />
       )}
     </div>
   );

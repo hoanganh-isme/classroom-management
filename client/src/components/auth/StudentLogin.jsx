@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { LogIn, User, Lock, ArrowRight } from 'lucide-react';
+import { LogIn, User, Lock, ArrowRight, ArrowLeft } from 'lucide-react';
 import { studentLogin } from '../../api/studentApi';
+
+import { saveAuthSession } from '../../utils/authUtils';
 
 export default function StudentLogin({ onLoginSuccess, onSwitchToInstructorLogin }) {
   const [username, setUsername] = useState('');
@@ -25,9 +27,9 @@ export default function StudentLogin({ onLoginSuccess, onSwitchToInstructorLogin
       });
 
       if (res.success && res.data) {
-        localStorage.setItem('token', res.data.token);
+        saveAuthSession(res.data);
         if (onLoginSuccess) {
-          onLoginSuccess(res.data.user);
+          onLoginSuccess(res.data);
         }
       } else {
         setError(res.message || 'Login failed. Please check your credentials.');
@@ -42,6 +44,15 @@ export default function StudentLogin({ onLoginSuccess, onSwitchToInstructorLogin
 
   return (
     <div className="auth-card" style={{ maxWidth: '420px', margin: '40px auto' }}>
+      {onSwitchToInstructorLogin && (
+        <button 
+          type="button" 
+          className="auth-back-btn" 
+          onClick={onSwitchToInstructorLogin}
+        >
+          <ArrowLeft size={18} /> Back
+        </button>
+      )}
       <div style={{ textAlign: 'center', marginBottom: '24px' }}>
         <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#e6f4ff', color: '#1677ff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 12px' }}>
           <LogIn size={28} />

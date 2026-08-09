@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, RefreshCw } from 'lucide-react';
+import { Plus, Search, RefreshCw, LogOut } from 'lucide-react';
 import CreateStudentModal from '../modals/CreateStudentModal';
 import EditStudentModal from '../modals/EditStudentModal';
 import StudentProfileModal from '../modals/StudentProfileModal';
 import { getStudents, deleteStudent } from '../../api/instructorApi';
+import { clearAuthSession } from '../../utils/authUtils';
 
-export default function ManageStudents({ forceOpenCreateModal = false }) {
+export default function ManageStudents({ forceOpenCreateModal = false, onLogout }) {
   const [students, setStudents] = useState([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
@@ -150,13 +151,17 @@ export default function ManageStudents({ forceOpenCreateModal = false }) {
                       onClick={fetchStudentsList}
                       style={{
                         marginTop: '8px',
-                        padding: '4px 12px',
+                        padding: '6px 14px',
                         cursor: 'pointer',
                         display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '4px',
-                        borderRadius: '4px',
-                        border: '1px solid #ccc'
+                        gap: '6px',
+                        borderRadius: '6px',
+                        border: '1px solid #cbd5e1',
+                        backgroundColor: '#ffffff',
+                        color: '#475569',
+                        fontSize: '13px',
+                        fontWeight: 500
                       }}
                     >
                       <RefreshCw size={14} /> Retry

@@ -29,6 +29,11 @@ export async function editProfile(payload) {
   return response.data;
 }
 
+export async function changePassword(payload) {
+  const response = await httpClient.put("/changePassword", payload);
+  return response.data;
+}
+
 export async function getMyLessons() {
   const response = await httpClient.get("/myLessons");
   return response.data;

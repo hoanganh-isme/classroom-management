@@ -246,6 +246,9 @@ export async function setupStudentAccount({
 
         passwordHash,
 
+        status:
+            "active",
+
         accountSetupComplete:
             true,
 
@@ -599,4 +602,32 @@ export async function completeStudentLesson({ studentId, lessonId }) {
         assignedAt: data.assignedAt ? data.assignedAt.toDate().toISOString() : null,
         completedAt: data.completedAt ? data.completedAt.toDate().toISOString() : null,
     };
+}
+
+export async function changeStudentPassword({ studentId, currentPassword, newPassword }) {
+    const studentRef = db.collection("users").doc(studentId);
+    const snapshot = await studentRef.get();
+
+    if (!snapshot.exists) {
+        throw createServiceError("Student was not found.", 404);
+    }
+
+    const student = snapshot.data();
+
+    if (!student.passwordHash) {
+        throw createServiceError("Password is not configured for this account yet.", 400);
+    }
+
+    const isMatch = await bcrypt.compare(currentPassword, student.passwordHash);
+    if (!isMatch) {
+        throw createServiceError("Current password is incorrect.", 400);
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await studentRef.update({
+        passwordHash,
+        updatedAt: Timestamp.now(),
+    });
+
+    return { success: true };
 }

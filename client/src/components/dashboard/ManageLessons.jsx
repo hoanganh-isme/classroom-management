@@ -1,30 +1,41 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, BookOpen, Clock, RefreshCw, CheckCircle2, User, Calendar } from 'lucide-react';
 import AssignLessonModal from '../modals/AssignLessonModal';
-import { getStudents, getLessons } from '../../api/instructorApi';
+import { getStudents, getLessons as getInstructorLessons } from '../../api/instructorApi';
+import { getMyLessons, markLessonDone } from '../../api/studentApi';
 
-export default function ManageLessons() {
+export default function ManageLessons({ role = 'instructor' }) {
+  const isInstructor = role === 'instructor';
+
   const [students, setStudents] = useState([]);
   const [lessons, setLessons] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [assignedSuccessMessage, setAssignedSuccessMessage] = useState('');
+  const [completingLessonId, setCompletingLessonId] = useState(null);
 
   const fetchLessonsData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [studentsRes, lessonsRes] = await Promise.all([
-        getStudents(),
-        getLessons(),
-      ]);
+      if (isInstructor) {
+        const [studentsRes, lessonsRes] = await Promise.all([
+          getStudents(),
+          getInstructorLessons(),
+        ]);
 
-      if (studentsRes.success && studentsRes.data) {
-        setStudents(studentsRes.data.students || []);
-      }
-      if (lessonsRes.success && lessonsRes.data) {
-        setLessons(lessonsRes.data.lessons || []);
+        if (studentsRes.success && studentsRes.data) {
+          setStudents(studentsRes.data.students || []);
+        }
+        if (lessonsRes.success && lessonsRes.data) {
+          setLessons(lessonsRes.data.lessons || []);
+        }
+      } else {
+        const lessonsRes = await getMyLessons();
+        if (lessonsRes.success && lessonsRes.data?.lessons) {
+          setLessons(lessonsRes.data.lessons);
+        }
       }
     } catch (err) {
       console.error('Failed to load lessons data:', err);
@@ -32,7 +43,7 @@ export default function ManageLessons() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isInstructor]);
 
   useEffect(() => {
     fetchLessonsData();
@@ -47,17 +58,38 @@ export default function ManageLessons() {
     fetchLessonsData();
   };
 
+  const handleMarkDone = async (lessonId) => {
+    setCompletingLessonId(lessonId);
+    try {
+      const res = await markLessonDone(lessonId);
+      if (res.success) {
+        setLessons((prev) =>
+          prev.map((l) => (l.id === lessonId ? { ...l, status: 'completed', completedAt: new Date().toISOString() } : l))
+        );
+      }
+    } catch (err) {
+      console.error('Failed to mark lesson done:', err);
+      alert(err.response?.data?.message || 'Failed to complete task.');
+    } finally {
+      setCompletingLessonId(null);
+    }
+  };
+
   return (
     <div className="manage-lessons-view">
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <h1 className="page-title" style={{ margin: 0 }}>Manage Lessons</h1>
-        <button
-          className="btn-add-student"
-          style={{ backgroundColor: '#1677ff', color: '#ffffff', borderColor: '#1677ff' }}
-          onClick={() => setIsAssignModalOpen(true)}
-        >
-          <Plus size={16} /> Assign New Lesson
-        </button>
+        <h1 className="page-title" style={{ margin: 0 }}>
+          {isInstructor ? 'Manage Lessons' : 'My Assigned Tasks'}
+        </h1>
+        {isInstructor && (
+          <button
+            className="btn-add-student"
+            style={{ backgroundColor: '#1677ff', color: '#ffffff', borderColor: '#1677ff' }}
+            onClick={() => setIsAssignModalOpen(true)}
+          >
+            <Plus size={16} /> Assign New Lesson
+          </button>
+        )}
       </div>
 
       {assignedSuccessMessage && (
@@ -71,7 +103,11 @@ export default function ManageLessons() {
         <div className="card-header-bar">
           <div className="student-count-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <BookOpen size={20} color="#1677ff" />
-            <span>All Assigned Lessons Across Students ({lessons.length})</span>
+            <span>
+              {isInstructor
+                ? `All Assigned Lessons Across Students (${lessons.length})`
+                : `My Assigned Lessons (${lessons.length})`}
+            </span>
           </div>
           <button
             onClick={fetchLessonsData}
@@ -90,6 +126,7 @@ export default function ManageLessons() {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }}>
               {lessons.map((lesson) => {
                 const isCompleted = lesson.status === 'completed';
+                const isCompleting = completingLessonId === lesson.id;
                 return (
                   <div
                     key={lesson.id}
@@ -97,17 +134,19 @@ export default function ManageLessons() {
                       backgroundColor: '#ffffff',
                       border: '1px solid #e2e8f0',
                       borderRadius: '12px',
-                      padding: '16px',
+                      padding: '18px',
                       boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
                       display: 'flex',
                       flexDirection: 'column',
-                      justify: 'space-between',
+                      justifyContent: 'space-between',
                       gap: '12px',
                     }}
                   >
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: '#1e293b' }}>{lesson.title}</h3>
+                        <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 600, color: isCompleted ? '#64748b' : '#1e293b', textDecoration: isCompleted && !isInstructor ? 'line-through' : 'none' }}>
+                          {lesson.title}
+                        </h3>
                         <span
                           style={{
                             padding: '2px 8px',
@@ -126,23 +165,58 @@ export default function ManageLessons() {
                         </span>
                       </div>
                       {lesson.description && (
-                        <p style={{ margin: '0 0 10px 0', fontSize: '13px', color: '#64748b', lineHeight: '1.4' }}>
+                        <p style={{ margin: '0 0 10px 0', fontSize: '13.5px', color: '#64748b', lineHeight: '1.4' }}>
                           {lesson.description}
                         </p>
                       )}
                     </div>
 
-                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '4px', fontSize: '12px', color: '#475569' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <User size={13} color="#1677ff" />
-                        <span><strong>Student:</strong> {lesson.studentName} ({lesson.studentPhone})</span>
-                      </div>
-                      {lesson.assignedAt && (
+                    <div style={{ borderTop: '1px solid #f1f5f9', paddingTop: '10px', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px', color: '#475569' }}>
+                      {isInstructor ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <User size={13} color="#1677ff" />
+                          <span><strong>Student:</strong> {lesson.studentName} ({lesson.studentPhone})</span>
+                        </div>
+                      ) : null}
+
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#94a3b8' }}>
                           <Calendar size={13} />
-                          <span>Assigned: {new Date(lesson.assignedAt).toLocaleDateString()}</span>
+                          <span>Assigned: {lesson.assignedAt ? new Date(lesson.assignedAt).toLocaleDateString() : 'N/A'}</span>
                         </div>
-                      )}
+
+                        {!isInstructor && (
+                          <div>
+                            {!isCompleted ? (
+                              <button
+                                onClick={() => handleMarkDone(lesson.id)}
+                                disabled={isCompleting}
+                                style={{
+                                  backgroundColor: '#22c55e',
+                                  color: '#ffffff',
+                                  border: 'none',
+                                  padding: '6px 14px',
+                                  borderRadius: '6px',
+                                  fontWeight: 600,
+                                  fontSize: '13px',
+                                  cursor: 'pointer',
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '4px',
+                                  transition: 'all 0.2s',
+                                }}
+                              >
+                                <CheckCircle2 size={14} />
+                                {isCompleting ? 'Marking...' : 'Done'}
+                              </button>
+                            ) : (
+                              <span style={{ fontSize: '12px', color: '#16a34a', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                                <CheckCircle2 size={14} /> Done
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -150,19 +224,23 @@ export default function ManageLessons() {
             </div>
           ) : (
             <div style={{ padding: '40px', textAlign: 'center', color: '#86909c' }}>
-              No lessons assigned yet. Click "Assign New Lesson" to assign lessons to students.
+              {isInstructor
+                ? 'No lessons assigned yet. Click "Assign New Lesson" to assign lessons to students.'
+                : 'No assigned tasks found for you yet.'}
             </div>
           )}
         </div>
       </div>
 
-      {/* Modal for Assigning Lesson */}
-      <AssignLessonModal
-        isOpen={isAssignModalOpen}
-        onClose={() => setIsAssignModalOpen(false)}
-        students={students}
-        onSuccess={handleLessonAssigned}
-      />
+      {/* Modal for Assigning Lesson (Instructor only) */}
+      {isInstructor && (
+        <AssignLessonModal
+          isOpen={isAssignModalOpen}
+          onClose={() => setIsAssignModalOpen(false)}
+          students={students}
+          onSuccess={handleLessonAssigned}
+        />
+      )}
     </div>
   );
 }

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { validateAccessCode, createAccessCode } from '../../api/authApi';
 
+import { saveAuthSession } from '../../utils/authUtils';
+
 export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode }) {
   const [code, setCode] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -22,10 +24,7 @@ export default function PhoneVerification({ phoneNumber, onBack, onSubmitCode })
     try {
       const res = await validateAccessCode(phoneNumber, code.trim());
       if (res.success && res.data?.token) {
-        localStorage.setItem('token', res.data.token);
-        if (res.data.user) {
-          localStorage.setItem('user', JSON.stringify(res.data.user));
-        }
+        saveAuthSession(res.data);
         if (onSubmitCode) {
           onSubmitCode(res.data);
         }

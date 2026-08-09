@@ -32,9 +32,9 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
 
   return (
     <div className="auth-card">
-      <button 
-        type="button" 
-        className="auth-back-btn" 
+      <button
+        type="button"
+        className="auth-back-btn"
         onClick={onBack || (() => window.history.back())}
       >
         <ArrowLeft size={18} /> Back
@@ -71,7 +71,7 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
               type="tel"
               className="form-input"
               style={{ flex: 1 }}
-              placeholder="0818528799"
+              placeholder="Enter your phone number"
               value={phoneNumber}
               onChange={(e) => setPhoneNumber(e.target.value)}
               required
@@ -81,8 +81,8 @@ export default function SignInPhone({ onNext, onSwitchToEmail, onBack }) {
         </div>
 
         {onSwitchToEmail && (
-          <div 
-            className="switch-auth-method" 
+          <div
+            className="switch-auth-method"
             onClick={onSwitchToEmail}
           >
             Or sign in with Email instead

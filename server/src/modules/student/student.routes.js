@@ -1,14 +1,7 @@
-import {
-    Router,
-} from "express";
+import { Router } from "express";
 
-import {
-    authenticate,
-} from "../../middleware/authenticate.js";
-
-import {
-    authorizeRoles,
-} from "../../middleware/authorize.js";
+import { authenticate } from "../../middleware/authenticate.js";
+import { authorizeRoles } from "../../middleware/authorize.js";
 
 import {
     setupAccount,
@@ -18,56 +11,27 @@ import {
     editProfile,
     getLessons,
     markLessonDone,
+    changePassword,
 } from "./student.controller.js";
 
-const studentRouter =
-    Router();
+const studentRouter = Router();
 
 /*
- * PUBLIC
+ * PUBLIC ROUTES
  */
-studentRouter.get(
-    "/verifyStudentSetupToken",
-    verifySetupToken,
-);
-
-studentRouter.post(
-    "/setupStudentAccount",
-    setupAccount,
-);
-
-studentRouter.post(
-    "/studentLogin",
-    studentLogin,
-);
+studentRouter.get("/verifyStudentSetupToken", verifySetupToken);
+studentRouter.post("/setupStudentAccount", setupAccount);
+studentRouter.post("/studentLogin", studentLogin);
 
 /*
- * Từ đây trở xuống:
- * student JWT bắt buộc.
+ * PRIVATE STUDENT ROUTES
  */
-studentRouter.use(
-    authenticate,
-    authorizeRoles("student"),
-);
+const requireStudent = [authenticate, authorizeRoles("student")];
 
-studentRouter.get(
-    "/myProfile",
-    getProfile,
-);
-
-studentRouter.put(
-    "/editProfile",
-    editProfile,
-);
-
-studentRouter.get(
-    "/myLessons",
-    getLessons,
-);
-
-studentRouter.put(
-    "/markLessonDone/:lessonId",
-    markLessonDone,
-);
+studentRouter.get("/myProfile", requireStudent, getProfile);
+studentRouter.put("/editProfile", requireStudent, editProfile);
+studentRouter.put("/changePassword", requireStudent, changePassword);
+studentRouter.get("/myLessons", requireStudent, getLessons);
+studentRouter.put("/markLessonDone/:lessonId", requireStudent, markLessonDone);
 
 export default studentRouter;

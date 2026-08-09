@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, MessageSquare, Users } from 'lucide-react';
+import { BookOpen, MessageSquare, Users, User } from 'lucide-react';
 
 export default function Sidebar({ activeTab = 'students', onSelectTab, role = 'instructor' }) {
   const isInstructor = role === 'instructor';
@@ -11,7 +11,8 @@ export default function Sidebar({ activeTab = 'students', onSelectTab, role = 'i
         { id: 'message', label: 'Message', icon: MessageSquare },
       ]
     : [
-        { id: 'lessons', label: 'Manage Lessons', icon: BookOpen },
+        { id: 'lessons', label: 'My Assigned Tasks', icon: BookOpen },
+        { id: 'profile', label: 'My Profile', icon: User },
         { id: 'message', label: 'Message', icon: MessageSquare },
       ];
 

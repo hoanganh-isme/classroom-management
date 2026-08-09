@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getStoredToken, clearAuthSession } from "../utils/authUtils";
 
 const httpClient = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API_URL || "http://localhost:3000",
@@ -9,7 +10,7 @@ const httpClient = axios.create({
 
 httpClient.interceptors.request.use(
     (config) => {
-        const token = localStorage.getItem("token");
+        const token = getStoredToken();
         if (token) {
             config.headers.Authorization = `Bearer ${token}`;
         }
@@ -24,12 +25,12 @@ httpClient.interceptors.response.use(
         if (error.response) {
             const { status } = error.response;
             if (status === 401) {
-                localStorage.removeItem("token");
-                localStorage.removeItem("user");
+                clearAuthSession();
                 window.dispatchEvent(new CustomEvent("auth:unauthorized"));
             } else if (status === 403) {
-                const msg = error.response.data?.message || "Bạn không có quyền truy cập vào chức năng này.";
-                alert(msg);
+                window.dispatchEvent(new CustomEvent("auth:forbidden", {
+                    detail: error.response.data
+                }));
             }
         }
         return Promise.reject(error);

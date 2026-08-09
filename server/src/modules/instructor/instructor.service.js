@@ -230,7 +230,7 @@ export async function addStudent({
         address: normalizedAddress,
 
         role: "student",
-        status: "active",
+        status: "inactive",
 
         /*
          * Student chưa thiết lập username/password.
