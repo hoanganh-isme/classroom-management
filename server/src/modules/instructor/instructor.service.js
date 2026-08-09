@@ -7,9 +7,8 @@ import {
 } from "../../config/firebase.js";
 
 import {
-    sendStudentWelcomeEmail,
-} from "../../services/email.service.js";
-
+    createStudentSetupInvitation,
+} from "../../services/student-invitation.service.js";
 const USERS_COLLECTION = "users";
 
 /**
@@ -230,9 +229,18 @@ export async function addStudent({
         email: normalizedEmail,
         address: normalizedAddress,
 
-        // Backend tự quyết định hai field này.
         role: "student",
         status: "active",
+
+        /*
+         * Student chưa thiết lập username/password.
+         */
+        accountSetupComplete: false,
+
+        username: null,
+        usernameNormalized: null,
+        passwordHash: null,
+        accountSetupAt: null,
 
         createdBy: instructorId,
         createdAt: now,
@@ -256,15 +264,20 @@ export async function addStudent({
         );
 
     try {
-        await sendStudentWelcomeEmail({
-            name: createdStudent.name,
-            email: createdStudent.email,
-            phone: createdStudent.phone,
+        await createStudentSetupInvitation({
+            studentId:
+                createdStudent.id,
+
+            name:
+                createdStudent.name,
+
+            email:
+                createdStudent.email,
         });
-    } catch (emailError) {
+    } catch (invitationError) {
         console.error(
-            "Failed to send welcome email to new student:",
-            emailError,
+            "Failed to create student setup invitation:",
+            invitationError,
         );
     }
 
@@ -541,12 +554,21 @@ export async function deleteStudent(
         );
 
     /*
-     * Xóa lesson trước khi xóa user.
+     * Xóa lesson và setup tokens trước khi xóa user.
      */
     await deleteSubcollection(
         studentDocument.ref,
         "lessons",
     );
+
+    const tokensSnapshot = await db
+        .collection("studentSetupTokens")
+        .where("studentId", "==", studentDocument.id)
+        .get();
+
+    for (const tokenDoc of tokensSnapshot.docs) {
+        await tokenDoc.ref.delete();
+    }
 
     await studentDocument.ref.delete();
 

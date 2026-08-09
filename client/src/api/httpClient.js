@@ -28,7 +28,8 @@ httpClient.interceptors.response.use(
                 localStorage.removeItem("user");
                 window.dispatchEvent(new CustomEvent("auth:unauthorized"));
             } else if (status === 403) {
-                alert("Bạn không có quyền instructor.");
+                const msg = error.response.data?.message || "Bạn không có quyền truy cập vào chức năng này.";
+                alert(msg);
             }
         }
         return Promise.reject(error);

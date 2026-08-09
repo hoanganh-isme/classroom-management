@@ -1,17 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import './styles/app.css';
 import DemoNavbar from './components/DemoNavbar';
 import SignInPhone from './components/auth/SignInPhone';
 import PhoneVerification from './components/auth/PhoneVerification';
 import SignInEmail from './components/auth/SignInEmail';
 import EmailVerification from './components/auth/EmailVerification';
+import StudentSetupAccount from './components/auth/StudentSetupAccount';
+import StudentLogin from './components/auth/StudentLogin';
 import DashboardPage from './pages/DashboardPage';
+import StudentDashboardPage from './pages/StudentDashboardPage';
+import { getUserRole } from './utils/authUtils';
 
 function App() {
-  const [currentScreen, setCurrentScreen] = useState('screen1');
-  const [authPhone, setAuthPhone] = useState('+84818528799');
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const path = window.location.pathname;
 
-  React.useEffect(() => {
+    if (token || path.includes('/student/setup-account')) {
+      return 'screen9';
+    }
+
+    const role = getUserRole();
+    if (role === 'student') return 'screen11';
+    if (role === 'instructor') return 'screen4';
+
+    return 'screen1';
+  });
+
+  const [authPhone, setAuthPhone] = useState('+84818528799');
+  const [setupToken, setSetupToken] = useState(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    return urlParams.get('token') || '';
+  });
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    const path = window.location.pathname;
+
+    if (token || path.includes('/student/setup-account')) {
+      setSetupToken(token || '');
+      setCurrentScreen('screen9');
+    }
+  }, []);
+
+  const handleAuthSuccess = (authData) => {
+    const role = getUserRole(authData);
+
+    if (role === 'student') {
+      setCurrentScreen('screen11');
+    } else if (role === 'instructor') {
+      setCurrentScreen('screen4');
+    } else {
+      setCurrentScreen('screen1');
+    }
+  };
+
+  useEffect(() => {
     const handleUnauthorized = () => {
       setCurrentScreen('screen1');
     };
@@ -49,8 +95,8 @@ function App() {
           <PhoneVerification
             phoneNumber={authPhone}
             onBack={() => setCurrentScreen('screen1')}
-            onSubmitCode={() => {
-              setCurrentScreen('screen4');
+            onSubmitCode={(authData) => {
+              handleAuthSuccess(authData);
             }}
           />
         </div>
@@ -61,7 +107,6 @@ function App() {
         <div className="auth-page-container">
           <SignInEmail
             onNext={(email) => {
-              console.log('Email entered:', email);
               setCurrentScreen('screen6');
             }}
             onSwitchToPhone={() => setCurrentScreen('screen1')}
@@ -75,15 +120,14 @@ function App() {
         <div className="auth-page-container">
           <EmailVerification
             onBack={() => setCurrentScreen('screen3')}
-            onSubmitCode={(code) => {
-              console.log('Email OTP submitted:', code);
-              setCurrentScreen('screen4');
+            onSubmitCode={(authData) => {
+              handleAuthSuccess(authData);
             }}
           />
         </div>
       )}
 
-      {/* Screen 4: Manage Students */}
+      {/* Screen 4: Manage Students (Instructor View) */}
       {currentScreen === 'screen4' && (
         <DashboardPage forceOpenCreateModal={false} initialTab="students" role="instructor" />
       )}
@@ -93,14 +137,29 @@ function App() {
         <DashboardPage forceOpenCreateModal={true} initialTab="students" role="instructor" />
       )}
 
-      {/* Screen 7: Messages (Instructor View - Frame 12) */}
-      {currentScreen === 'screen7' && (
-        <DashboardPage forceOpenCreateModal={false} initialTab="message" role="instructor" />
+      {/* Screen 9: Student Account Setup (from Email Link) */}
+      {currentScreen === 'screen9' && (
+        <div className="auth-page-container">
+          <StudentSetupAccount
+            initialToken={setupToken}
+            onNavigateToLogin={() => setCurrentScreen('screen10')}
+          />
+        </div>
       )}
 
-      {/* Screen 8: Messages (Student View - Frame 16) */}
-      {currentScreen === 'screen8' && (
-        <DashboardPage forceOpenCreateModal={false} initialTab="message" role="student" />
+      {/* Screen 10: Student Login (Username & Password) */}
+      {currentScreen === 'screen10' && (
+        <div className="auth-page-container">
+          <StudentLogin
+            onLoginSuccess={(user) => handleAuthSuccess({ user })}
+            onSwitchToInstructorLogin={() => setCurrentScreen('screen1')}
+          />
+        </div>
+      )}
+
+      {/* Screen 11: Student Dashboard (Tasks Done & Profile Edit) */}
+      {currentScreen === 'screen11' && (
+        <StudentDashboardPage onLogout={() => setCurrentScreen('screen10')} />
       )}
     </div>
   );
