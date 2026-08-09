@@ -16,10 +16,7 @@ import {
 
 const authRouter = Router();
 
-/*
- * Public routes:
- * Chưa đăng nhập vẫn được gọi.
- */
+// Public authentication endpoints
 authRouter.post(
     "/createAccessCode",
     createAccessCode,

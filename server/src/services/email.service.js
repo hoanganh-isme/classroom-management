@@ -141,11 +141,7 @@ export async function sendStudentSetupEmail({
         </div>
     `;
 
-    /*
-     * Development:
-     * không gửi email thật,
-     * in verification URL ra terminal.
-     */
+    // Development mode: print verification URL to terminal instead of sending actual email
     if (emailMode === "console") {
         console.log(
             "========================================",

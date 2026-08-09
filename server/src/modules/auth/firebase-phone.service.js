@@ -7,7 +7,7 @@ function createServiceError(message, statusCode) {
     return error;
 }
 
-// Xác thực token SĐT từ Firebase và cấp JWT cho ứng dụng
+// Verifies Firebase Phone ID Token and issues application JWT
 export async function authenticateFirebasePhone(idToken) {
     if (!idToken || typeof idToken !== "string" || !idToken.trim()) {
         throw createServiceError("idToken is required and must be a valid string.", 400);
@@ -31,7 +31,7 @@ export async function authenticateFirebasePhone(idToken) {
         throw createServiceError("Authentication token must be issued by the phone provider.", 400);
     }
 
-    // Tra cứu thông tin tài khoản đã đăng ký trong Firestore bằng SĐT
+    // Look up registered user document in Firestore by verified phone number
     const userSnapshot = await db
         .collection("users")
         .where("phone", "==", phoneNumber)

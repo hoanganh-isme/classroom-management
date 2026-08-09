@@ -207,9 +207,7 @@ export async function setupStudentAccount({
             .trim()
             .toLowerCase();
 
-    /*
-     * Username phải unique.
-     */
+    // Username must be unique across all accounts
     const usernameSnapshot =
         await db
             .collection("users")
@@ -228,9 +226,7 @@ export async function setupStudentAccount({
         );
     }
 
-    /*
-     * Không bao giờ lưu password plaintext.
-     */
+    // Never store plaintext passwords
     const passwordHash =
         await bcrypt.hash(
             password,
@@ -259,10 +255,7 @@ export async function setupStudentAccount({
             Timestamp.now(),
     });
 
-    /*
-     * Token one-time:
-     * setup xong là xóa.
-     */
+    // Delete one-time setup token after use
     await tokenReference.delete();
 
     return {
@@ -295,10 +288,7 @@ export async function loginStudent({
             .get();
     }
 
-    /*
-     * Không nói username tồn tại hay không.
-     * Tránh user enumeration.
-     */
+    // Prevent user enumeration by returning a generic error
     if (userSnapshot.empty) {
         throw createServiceError(
             "Invalid username or password.",
@@ -362,9 +352,7 @@ export async function loginStudent({
             Boolean(user.accountSetupComplete),
     };
 
-    /*
-     * Dùng lại JWT service hiện tại.
-     */
+    // Reuse application JWT token generator
     const token =
         createAuthToken(
             authenticatedUser,
@@ -533,16 +521,7 @@ export async function updateMyProfile({
             email;
     }
 
-    /*
-     * Không có:
-     *
-     * role
-     * status
-     * passwordHash
-     * accountSetupComplete
-     *
-     * trong request được update.
-     */
+    // Exclude protected system fields (role, status, passwordHash, accountSetupComplete) from update payload
 
     await reference.update(
         updateData,

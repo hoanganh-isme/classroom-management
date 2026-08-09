@@ -11,9 +11,7 @@ import {
 } from "../../services/student-invitation.service.js";
 const USERS_COLLECTION = "users";
 
-/**
- * Tạo lỗi có HTTP status để controller xử lý.
- */
+// Creates HTTP service error with status code
 function createHttpError(
     statusCode,
     message,
@@ -25,9 +23,7 @@ function createHttpError(
     return error;
 }
 
-/**
- * Chuyển Firestore Timestamp thành chuỗi ISO.
- */
+// Converts Firestore Timestamp to ISO string
 function timestampToIso(timestamp) {
     if (!timestamp) {
         return null;
@@ -44,10 +40,7 @@ function timestampToIso(timestamp) {
     return timestamp;
 }
 
-/**
- * Chuyển Firestore document thành object
- * có thể trả về client.
- */
+// Maps Firestore student document to plain response object
 function mapStudentDocument(
     studentDocument,
 ) {
@@ -75,9 +68,7 @@ function mapStudentDocument(
     };
 }
 
-/**
- * Tìm user theo phone.
- */
+// Finds user document by phone number
 async function findUserByPhone(
     phone,
 ) {
@@ -98,12 +89,7 @@ async function findUserByPhone(
     return snapshot.docs[0];
 }
 
-/**
- * Tìm student theo phone.
- *
- * Nếu phone thuộc instructor thì cũng không
- * được xem là student.
- */
+// Finds student document by phone number
 async function findStudentByPhone(
     phone,
 ) {
@@ -123,12 +109,7 @@ async function findStudentByPhone(
     return userDocument;
 }
 
-/**
- * Kiểm tra phone đã được sử dụng hay chưa.
- *
- * excludedDocumentId dùng khi update:
- * student hiện tại được phép giữ nguyên phone.
- */
+// Asserts phone number is available
 async function ensurePhoneIsAvailable(
     phone,
     excludedDocumentId = null,
@@ -157,9 +138,7 @@ async function ensurePhoneIsAvailable(
     }
 }
 
-/**
- * Kiểm tra email đã được sử dụng hay chưa.
- */
+// Asserts email address is available
 async function ensureEmailIsAvailable(
     email,
     excludedDocumentId = null,
@@ -232,9 +211,7 @@ export async function addStudent({
         role: "student",
         status: "active",
 
-        /*
-         * Student chưa thiết lập username/password.
-         */
+        // Student has not completed initial account setup yet
         accountSetupComplete: false,
 
         username: null,
@@ -302,10 +279,7 @@ export async function listStudents() {
             mapStudentDocument,
         );
 
-    /*
-     * Sắp xếp mới nhất trước.
-     * Làm trong Node để chưa cần composite index.
-     */
+    // Sort newest students first
     students.sort(
         (firstStudent, secondStudent) =>
             (
@@ -344,10 +318,7 @@ export async function getStudentProfile(
         );
     }
 
-    /*
-     * Challenge yêu cầu trả cả assigned lessons.
-     * Hiện chưa có lesson thì mảng sẽ rỗng.
-     */
+    // Retrieve assigned lessons for target student
     const lessonsSnapshot =
         await studentDocument.ref
             .collection("lessons")
@@ -487,12 +458,7 @@ export async function editStudent({
     );
 }
 
-/**
- * Xóa toàn bộ document trong một subcollection.
- *
- * Firestore không tự xóa subcollection khi
- * parent document bị xóa.
- */
+// Recursively deletes all documents in a subcollection
 async function deleteSubcollection(
     documentReference,
     collectionName,
@@ -553,9 +519,7 @@ export async function deleteStudent(
             studentDocument,
         );
 
-    /*
-     * Xóa lesson và setup tokens trước khi xóa user.
-     */
+    // Delete lessons subcollection and setup tokens before deleting user
     await deleteSubcollection(
         studentDocument.ref,
         "lessons",

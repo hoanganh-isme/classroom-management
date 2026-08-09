@@ -39,9 +39,7 @@ function getAccessCodeTtl() {
 export async function createPhoneAccessCode(
     phoneNumber,
 ) {
-    /*
-     * Tìm người dùng đã tồn tại trong collection users.
-     */
+    // Look up registered user in users collection
     const userSnapshot = await db
         .collection("users")
         .where("phone", "==", phoneNumber)
@@ -65,27 +63,20 @@ export async function createPhoneAccessCode(
         );
     }
 
-    /*
-     * randomInt lấy số từ 100000 đến 999999.
-     */
+    // Generate random 6-digit access code (100000 - 999999)
     const accessCode = randomInt(
         100000,
         1000000,
     ).toString();
 
-    /*
-     * Không lưu trực tiếp OTP dạng rõ trong Firestore.
-     */
+    // Hash access code before storing in Firestore
     const codeHash = createHash("sha256")
         .update(accessCode)
         .digest("hex");
 
     const ttlSeconds = getAccessCodeTtl();
 
-    /*
-     * Mỗi user chỉ giữ một OTP đang hoạt động.
-     * OTP mới sẽ ghi đè OTP cũ.
-     */
+    // Store active OTP per user (new OTP overwrites previous)
     const accessCodeReference = db
         .collection("accessCodes")
         .doc(userDocument.id);
@@ -109,9 +100,7 @@ export async function createPhoneAccessCode(
             expiresInSeconds: ttlSeconds,
         });
     } catch (error) {
-        /*
-         * Nếu gửi SMS thất bại thì xóa OTP vừa tạo.
-         */
+        // Delete stored access code if dispatch fails
         await accessCodeReference.delete();
         throw error;
     }
@@ -211,9 +200,7 @@ export async function validatePhoneAccessCode(
         );
     }
 
-    /*
-     * OTP chỉ được dùng một lần.
-     */
+    // Prepare authenticated user payload
     const authenticatedUser = {
         id: userDocument.id,
         name: user.name,
@@ -227,9 +214,7 @@ export async function validatePhoneAccessCode(
     const token =
         createAuthToken(authenticatedUser);
 
-    /*
-     * OTP chỉ được dùng một lần.
-     */
+    // Delete single-use access code after successful validation
     await accessCodeReference.delete();
 
     return {

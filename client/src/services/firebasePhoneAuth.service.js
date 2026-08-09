@@ -28,6 +28,8 @@ function mapFirebasePhoneError(error) {
             return "This user account has been disabled in Firebase.";
         case "auth/captcha-check-failed":
             return "reCAPTCHA verification failed. Please try again.";
+        case "auth/billing-not-enabled":
+            return "Firebase Phone Auth requires a Blaze billing plan for real SMS, or use test phone numbers in dev mode.";
         default:
             return error.message || "Phone authentication failed. Please try again.";
     }
