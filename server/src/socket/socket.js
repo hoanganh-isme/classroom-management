@@ -2,10 +2,7 @@ import { verifyAuthToken } from "../services/token.service.js";
 import { getAuthenticatedUser } from "../services/auth-user.service.js";
 import { registerChatHandlers } from "../modules/chat/chat.socket.js";
 
-/**
- * Initializes Socket.io authentication middleware and connection handlers.
- * @param {import("socket.io").Server} io 
- */
+// Initializes Socket.io authentication middleware and connection handlers
 export function initializeSocket(io) {
     // 1. Socket Authentication Middleware (runs BEFORE connection)
     io.use(async (socket, next) => {

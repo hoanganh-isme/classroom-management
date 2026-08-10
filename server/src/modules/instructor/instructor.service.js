@@ -167,9 +167,6 @@ async function ensureEmailIsAvailable(
     }
 }
 
-/**
- * POST /addStudent
- */
 export async function addStudent({
     name,
     phone,
@@ -209,7 +206,7 @@ export async function addStudent({
         address: normalizedAddress,
 
         role: "student",
-        status: "active",
+        status: "inactive",
 
         // Student has not completed initial account setup yet
         accountSetupComplete: false,
@@ -261,9 +258,6 @@ export async function addStudent({
     return createdStudent;
 }
 
-/**
- * GET /students
- */
 export async function listStudents() {
     const snapshot = await db
         .collection(USERS_COLLECTION)
@@ -297,9 +291,6 @@ export async function listStudents() {
     };
 }
 
-/**
- * GET /student/:phone
- */
 export async function getStudentProfile(
     phone,
 ) {
@@ -362,9 +353,6 @@ export async function getStudentProfile(
     };
 }
 
-/**
- * PUT /editStudent/:phone
- */
 export async function editStudent({
     currentPhone,
     changes,
@@ -493,9 +481,6 @@ async function deleteSubcollection(
     }
 }
 
-/**
- * DELETE /student/:phone
- */
 export async function deleteStudent(
     phone,
 ) {
@@ -539,9 +524,6 @@ export async function deleteStudent(
     return deletedStudent;
 }
 
-/**
- * POST /assignLesson
- */
 export async function assignLesson({
     title,
     description = "",
@@ -594,9 +576,6 @@ export async function assignLesson({
     };
 }
 
-/**
- * GET /lessons - Query all lessons across all student subcollections using CollectionGroup
- */
 export async function listAllLessons() {
     const snapshot = await db.collectionGroup("lessons").get();
     const lessons = [];

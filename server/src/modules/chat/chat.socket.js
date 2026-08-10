@@ -6,11 +6,7 @@ import {
     saveMessage,
 } from "./chat.service.js";
 
-/**
- * Registers real-time Socket.io chat event handlers with read/unread status.
- * @param {import("socket.io").Server} io 
- * @param {import("socket.io").Socket} socket 
- */
+// Registers real-time Socket.io chat event handlers with read/unread status
 export function registerChatHandlers(io, socket) {
     // 1. chat:list
     socket.on("chat:list", async (callback) => {

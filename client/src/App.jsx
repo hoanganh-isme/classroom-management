@@ -10,12 +10,7 @@ import StudentLogin from './components/auth/StudentLogin';
 import DashboardPage from './pages/DashboardPage';
 import { getUserRole, clearAuthSession } from './utils/authUtils';
 
-/**
- * Role-based Screen Guard rule.
- * @param {string} screenId 
- * @param {string|null} role 
- * @returns {boolean}
- */
+// Role-based Screen Guard rule
 export function canAccessScreen(screenId, role) {
   const publicScreens = ['screen1', 'screen2', 'screen3', 'screen6', 'screen9', 'screen10'];
   const instructorScreens = ['screen4', 'screen5'];

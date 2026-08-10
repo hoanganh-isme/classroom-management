@@ -5,11 +5,7 @@ const SOCKET_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_API
 
 let socketInstance = null;
 
-/**
- * Initializes or returns the authenticated Socket.io client connection.
- * Prevents duplicate connections across React re-renders.
- * @returns {import("socket.io-client").Socket|null}
- */
+// Connects or retrieves the authenticated Socket.io client instance
 export function connectSocket() {
   const token = getStoredToken();
   if (!token) {
@@ -51,18 +47,12 @@ export function connectSocket() {
   return socketInstance;
 }
 
-/**
- * Returns the current active Socket instance.
- * @returns {import("socket.io-client").Socket|null}
- */
+// Returns current active Socket instance
 export function getSocket() {
   return socketInstance;
 }
 
-/**
- * Disconnects and cleans up the active Socket connection.
- * Used on user logout.
- */
+// Disconnects active Socket connection on logout
 export function disconnectSocket() {
   if (socketInstance) {
     socketInstance.disconnect();

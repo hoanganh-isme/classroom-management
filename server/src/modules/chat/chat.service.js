@@ -7,12 +7,7 @@ function createChatError(message, statusCode = 400) {
     return error;
 }
 
-/**
- * Asserts that the current user is a member of the conversation.
- * @param {Object} params 
- * @param {Object} params.currentUser - Authenticated socket user { id, role }
- * @param {Object} params.conversation - Conversation document data { instructorId, studentId }
- */
+// Asserts that the current user is a member of the conversation
 export function assertConversationMember({ currentUser, conversation }) {
     if (!currentUser || !conversation) {
         throw createChatError("Invalid conversation access parameters.", 400);
@@ -29,12 +24,7 @@ export function assertConversationMember({ currentUser, conversation }) {
     }
 }
 
-/**
- * Gets or creates a deterministic conversation for an instructor/student pair.
- * @param {Object} params
- * @param {Object} params.currentUser - Authenticated user
- * @param {string} [params.studentId] - Target student ID (required if currentUser is instructor)
- */
+// Gets or creates a deterministic conversation for an instructor/student pair
 export async function getOrCreateConversation({ currentUser, studentId }) {
     let finalInstructorId = "";
     let finalStudentId = "";
@@ -146,10 +136,7 @@ export async function getOrCreateConversation({ currentUser, studentId }) {
     };
 }
 
-/**
- * Lists all conversations for the current authenticated user including unread counts.
- * @param {Object} currentUser 
- */
+// Lists all conversations for the current authenticated user including unread counts
 export async function listConversations(currentUser) {
     if (!currentUser || !currentUser.id) {
         throw createChatError("User authentication is required.", 401);
@@ -206,12 +193,7 @@ export async function listConversations(currentUser) {
     return conversations;
 }
 
-/**
- * Retrieves normalized message history for a conversation including read status.
- * @param {Object} params 
- * @param {Object} params.currentUser 
- * @param {string} params.conversationId 
- */
+// Retrieves message history for a conversation including read status
 export async function getConversationHistory({ currentUser, conversationId }) {
     if (!conversationId || typeof conversationId !== "string") {
         throw createChatError("conversationId is required.", 400);
@@ -250,13 +232,7 @@ export async function getConversationHistory({ currentUser, conversationId }) {
     return messages;
 }
 
-/**
- * Saves a new message to a conversation and increments the unread count for the recipient.
- * @param {Object} params 
- * @param {Object} params.currentUser 
- * @param {string} params.conversationId 
- * @param {string} params.text 
- */
+// Saves a new message to a conversation and increments recipient unread count
 export async function saveMessage({ currentUser, conversationId, text }) {
     if (!conversationId || typeof conversationId !== "string") {
         throw createChatError("conversationId is required.", 400);
@@ -315,12 +291,7 @@ export async function saveMessage({ currentUser, conversationId, text }) {
     };
 }
 
-/**
- * Marks a conversation as read for the current user and sets messages as read.
- * @param {Object} params
- * @param {Object} params.currentUser
- * @param {string} params.conversationId
- */
+// Marks a conversation as read for the current user and sets messages as read
 export async function markConversationAsRead({ currentUser, conversationId }) {
     if (!conversationId || typeof conversationId !== "string") {
         throw createChatError("conversationId is required.", 400);

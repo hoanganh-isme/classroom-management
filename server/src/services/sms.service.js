@@ -2,10 +2,7 @@ import twilio from "twilio";
 
 let twilioClientInstance = null;
 
-/**
- * Validates and retrieves the Twilio configuration and SDK client.
- * Lazy initialization prevents unhandled errors during startup if Twilio is unused.
- */
+// Validates and retrieves the Twilio configuration and SDK client
 function getTwilioClient() {
     if (twilioClientInstance) {
         return twilioClientInstance;
@@ -25,15 +22,7 @@ function getTwilioClient() {
     return twilioClientInstance;
 }
 
-/**
- * Sends an SMS access code to the given phone number via Console (Dev) or Twilio API.
- * 
- * @param {Object} params
- * @param {string} params.phoneNumber - E.164 formatted target phone number
- * @param {string} params.accessCode - Generated 6-digit OTP string
- * @param {number} [params.expiresInSeconds=300] - OTP TTL in seconds
- * @returns {Promise<Object>} Delivery result object
- */
+// Sends an SMS access code via Console (Dev) or Twilio API
 export async function sendAccessCode({
     phoneNumber,
     accessCode,

@@ -6,13 +6,7 @@ function createAuthError(message, statusCode) {
     return error;
 }
 
-/**
- * Shared service for retrieving and validating an authenticated user.
- * Used by both HTTP authenticate middleware and Socket.io authentication.
- *
- * @param {Object} decodedToken - Payload from verified JWT token ({ sub, role })
- * @returns {Promise<Object>} Sanitized user object: { id, role, name, phone, email }
- */
+// Shared service for retrieving and validating an authenticated user
 export async function getAuthenticatedUser(decodedToken) {
     const { sub, role } = decodedToken || {};
 

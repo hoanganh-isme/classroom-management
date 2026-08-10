@@ -139,9 +139,6 @@ function handleError(
         });
 }
 
-/**
- * POST /addStudent
- */
 export async function addStudent(
     request,
     response,
@@ -166,9 +163,11 @@ export async function addStudent(
     try {
         const student =
             await addStudentService({
-                ...validation.data,
-                instructorId:
-                    request.user.id,
+                name: validation.data.name,
+                phone: validation.data.phone,
+                email: validation.data.email,
+                address: validation.data.address,
+                instructorId: request.user.id,
             });
 
         return response.status(201).json({
@@ -188,9 +187,6 @@ export async function addStudent(
     }
 }
 
-/**
- * GET /students
- */
 export async function getStudents(
     request,
     response,
@@ -212,9 +208,6 @@ export async function getStudents(
     }
 }
 
-/**
- * GET /student/:phone
- */
 export async function getStudent(
     request,
     response,
@@ -253,9 +246,6 @@ export async function getStudent(
     }
 }
 
-/**
- * PUT /editStudent/:phone
- */
 export async function editStudent(
     request,
     response,
@@ -318,9 +308,6 @@ export async function editStudent(
     }
 }
 
-/**
- * DELETE /student/:phone
- */
 export async function deleteStudent(
     request,
     response,
@@ -363,9 +350,6 @@ export async function deleteStudent(
     }
 }
 
-/**
- * POST /assignLesson
- */
 export async function assignLesson(
     request,
     response,
@@ -412,9 +396,6 @@ export async function assignLesson(
     }
 }
 
-/**
- * GET /lessons
- */
 export async function getLessons(
     request,
     response,

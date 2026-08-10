@@ -22,7 +22,7 @@ The system supports role-based authentication, student management, lesson assign
 
 **Services**
 - Firebase Firestore
-- Twilio
+- Twilio (Due the the internal error of the trial account, I will use the firebase authentication phone to replace)
 - Nodemailer / SMTP
 
 ---
@@ -226,6 +226,8 @@ http://localhost:5173
 Instructor accounts are identified by users stored in Firestore with:
 
 ```text
+phone: 0818528799
+OTP hard by firebare: 123456
 role: instructor
 status: active
 ```

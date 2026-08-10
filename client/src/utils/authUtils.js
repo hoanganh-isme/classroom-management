@@ -1,11 +1,7 @@
 import { disconnectSocket } from '../socket/socketClient';
 import { signOutFirebase } from '../services/firebasePhoneAuth.service';
 
-/**
- * Decodes a JWT token payload safely.
- * @param {string} token 
- * @returns {Object|null} Decoded payload or null if invalid
- */
+// Decodes a JWT token payload safely
 export function decodeJwtToken(token) {
   if (!token || typeof token !== 'string') return null;
   try {
@@ -28,11 +24,7 @@ export function decodeJwtToken(token) {
   }
 }
 
-/**
- * Checks if a JWT token is expired.
- * @param {string} token 
- * @returns {boolean} True if expired or invalid, false if valid
- */
+// Checks if a JWT token is expired
 export function isJwtExpired(token) {
   const decoded = decodeJwtToken(token);
   if (!decoded || !decoded.exp) return true;
@@ -40,10 +32,7 @@ export function isJwtExpired(token) {
   return decoded.exp <= currentTimeInSeconds;
 }
 
-/**
- * Returns the currently stored token if valid and not expired.
- * @returns {string|null}
- */
+// Returns the currently stored token if valid and not expired
 export function getStoredToken() {
   const token = localStorage.getItem('token');
   if (!token || isJwtExpired(token)) {
@@ -52,12 +41,7 @@ export function getStoredToken() {
   return token;
 }
 
-/**
- * Gets the user role strictly verified against JWT token.
- * Does NOT fallback to localStorage.user.role as authorization authority.
- * @param {string|Object} tokenOrAuthData 
- * @returns {"student"|"instructor"|null}
- */
+// Gets the user role verified against JWT token
 export function getUserRole(tokenOrAuthData = null) {
   let rawToken = typeof tokenOrAuthData === 'string' ? tokenOrAuthData : tokenOrAuthData?.token;
 
@@ -75,10 +59,7 @@ export function getUserRole(tokenOrAuthData = null) {
   return null;
 }
 
-/**
- * Saves authenticated session data.
- * @param {Object} authData { token, user }
- */
+// Saves authenticated session data
 export function saveAuthSession(authData) {
   if (!authData) return;
   if (authData.token) {
@@ -92,9 +73,7 @@ export function saveAuthSession(authData) {
   }
 }
 
-/**
- * Clears authenticated session data.
- */
+// Clears authenticated session data
 export function clearAuthSession() {
   localStorage.removeItem('token');
   localStorage.removeItem('user');
